@@ -1,0 +1,3629 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.2.0",
+    "title": "Adversus API v1 docs",
+    "description": "Adversus docs v1"
+  },
+  "host": "api.adversus.dk",
+  "schemes": [
+    "https"
+  ],
+  "securityDefinitions": {
+    "basic_auth": {
+      "type": "basic"
+    }
+  },
+  "basePath": "/v1",
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/organization": {
+      "get": {
+        "security": [],
+        "summary": "Information about the organization for the connected user",
+        "description": "Returns an unique identifier, and the name for the organization which the API user belongs to.\n",
+        "tags": [
+          "organization"
+        ],
+        "responses": {
+          "200": {
+            "description": "Information about the organization",
+            "schema": {
+              "$ref": "#/definitions/organization"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Get",
+        "x-ms-visibility": "important"
+      }
+    },
+    "/imports": {
+      "post": {
+        "security": [],
+        "summary": "Create import",
+        "description": "An import is used for bulk import of contacts, and has additional features for handling duplicate checking, and can also be used for updating existing leads. After creating the import, contacts can be added in a streaming fashion using the `import/{id}/insert` endpoint. The import is finally initiated by calling `import/{id}/start`, at which point the import is queud for processing.\nThe `$.match.fields` can be used to specify which fields are used for duplicate checking (e.g. a field that specifies an unique id), and the `$.match.blacklist` specifies which pools contacts should be checked against for duplicates.\nIf existing contacts have fields that should be updated based on the data from the import these can be specified in `$.updateFields`.\nThe only field which is required for creating an import is the `$.poolId`",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Create import request body. only poolId is required",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "example": {
+                "poolId": 21,
+                "match": {
+                  "fields": [
+                    12,
+                    22
+                  ],
+                  "blacklist": [
+                    123
+                  ]
+                },
+                "updateFields": [
+                  55,
+                  34
+                ],
+                "callbackUrl": "https://your-custom-callback-url.dev"
+              }
+            }
+          }
+        ],
+        "tags": [
+          "imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "returns new import request",
+            "schema": {
+              "type": "object",
+              "example": {
+                "id": 3,
+                "state": "init",
+                "match": {
+                  "fields": [
+                    12,
+                    22
+                  ],
+                  "blacklist": [
+                    123,
+                    121
+                  ]
+                },
+                "updateFields": [
+                  55,
+                  34
+                ],
+                "poolId": 21,
+                "callbackUrl": "https://your-custom-callback-url.dev",
+                "contacts": 0
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Object",
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/imports{id}/insert": {
+      "post": {
+        "security": [],
+        "summary": "Insert into import request",
+        "description": "Inserts contacts by submitting an array of objects where each object has a data property with a key value representation of the contacts data.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "unique identifier for insert group",
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Array of key value objects, with one object per contact",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "example": [
+                {
+                  "data": {
+                    "13266": "Alice",
+                    "13267": "12345678"
+                  }
+                },
+                {
+                  "data": {
+                    "13266": "Bob",
+                    "13267": "23456789"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns object specifiying how many contacts were added to the import and the running total",
+            "schema": {
+              "type": "object",
+              "example": {
+                "inserted": 2,
+                "total": 2
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Submit"
+      }
+    },
+    "/imports{id}/start": {
+      "post": {
+        "security": [],
+        "summary": "Execute import request",
+        "description": "Queues the import request. If a callback url has been specified the system will call this url once the import has been fully processed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "unique identifier for insert group",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "tags": [
+          "imports"
+        ],
+        "responses": {
+          "200": {
+            "description": "returns the import request",
+            "schema": {
+              "type": "object",
+              "example": {
+                "id": 3,
+                "state": "init",
+                "match": {
+                  "fields": [
+                    12,
+                    123,
+                    4,
+                    23
+                  ],
+                  "blacklist": [
+                    123,
+                    121
+                  ]
+                },
+                "updateFields": [
+                  55,
+                  34
+                ],
+                "poolId": 21,
+                "callbackUrl": "/bankgroups",
+                "contacts": 0
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Post"
+      }
+    },
+    "/campaigns": {
+      "get": {
+        "security": [],
+        "summary": "Campaign list",
+        "description": "The campaign endpoint returns information about the campaigns related to the authenticated user. The response includes the display name\nand other details about each campaigns.\n",
+        "tags": [
+          "campaigns"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of campaigns",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/campaigns"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Returns"
+      }
+    },
+    "/campaigns/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific campaign",
+        "description": "Returns information about a specific campaign.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for campaign.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "campaigns"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of campaigns",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/campaigns"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "ResultFields"
+      }
+    },
+    "/campaigns/{id}/addContact": {
+      "post": {
+        "security": [],
+        "summary": "Add a contact to a specific campaign",
+        "description": "Adds a contact to a specific campaign (making it a campaign-lead), specifying a lead status indicating the contacts campaign state (e.g. not previously dialed)\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for campaign.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Contact id and initial campaign status",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/campaign-add-contact"
+            }
+          }
+        ],
+        "tags": [
+          "campaigns",
+          "contacts"
+        ],
+        "responses": {
+          "201": {
+            "description": "The contact has been added to the campaign",
+            "headers": {
+              "Location": {
+                "description": "Resource url for the created lead",
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "Returned if the lead has already been added to the campaign, or the request is otherwise not well-formed",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Indicates that either the campaign or the contact could not be found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "ContactId"
+      }
+    },
+    "/campaigns/{id}/efficiency": {
+      "get": {
+        "security": [],
+        "summary": "Check efficiency for a campaign",
+        "description": "Return efficiency on a campaign to see what time is being used for.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for campaign.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "campaigns",
+          "efficiency"
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of active users and related efficiency data",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/efficiency"
+              }
+            }
+          },
+          "204": {
+            "description": "There is no data for the requested resource",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "User does not have the necessary permissions for the requested campaign",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Array"
+      }
+    },
+    "/contacts/findByData": {
+      "post": {
+        "security": [],
+        "summary": "Contact list",
+        "description": "Search for a contact by specifying a filter for the contact-data. The filter keys should correspond to the field ids. Only the $eq and $in filter operators are allowed.\n",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Filter description (ref. https://adversus.dk/api/), with the filter keys being field identifiers",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "example": {
+                "42": "Alice",
+                "1337": "12345678"
+              }
+            }
+          }
+        ],
+        "tags": [
+          "contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of contact identifiers matching the fitler.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Will be returned if the filter is not valid, e.g. the field identifiers are invalid or the filter is not well-formed",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "String"
+      }
+    },
+    "/contacts": {
+      "get": {
+        "security": [],
+        "summary": "Contact list",
+        "description": "Equivalent to the contacts/findByData endpoint, but allows specifying the filter as a query parameter.",
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Json encoded filter description",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "projection",
+            "in": "query",
+            "description": "A comma seperated list of field identifiers, which should be shown for each contact. __IMPORTANT:__ When a projection is not defined, only the contact ids will be returned.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "includeMeta",
+            "in": "query",
+            "description": "Boolean telling if the query needs to return extended info, like pagination.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sortProperty",
+            "in": "query",
+            "description": "Name of the column the generated query will be sorted by",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "description": "The direction we want to sort for the 'sortProperty'.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ]
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "How many rows should be returned for each page.",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "What page is currently being viewed. If 'pageSize' have been defined and not 'page', 1 will be assumed.",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of contacts matching the filter. __IMPORTANT:__ If a projection is not specified, only the contact ids will be returned.",
+            "schema": {
+              "$ref": "#/definitions/contactsResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request. Will be returned if the filter is not valid, e.g. the field identifiers are invalid or the filter is not well-formed",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Find"
+      },
+      "post": {
+        "security": [],
+        "summary": "Create a contact associated with some pool",
+        "description": "Create a contact by specifying the pool and data-entries.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Json object containing the pool identifier for the contact and the data fields that should be created",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "example": {
+                "poolId": 1337,
+                "data": {
+                  "1": "Alice",
+                  "5": "8200",
+                  "8": "123456789",
+                  "13": "Wonderland"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "The non-empty data-entries for the specified contact as a key-value map (after updating)",
+            "schema": {
+              "type": "object",
+              "example": {
+                "id": 321654,
+                "poolId": 1337,
+                "data": {
+                  "1": "Alice",
+                  "5": "8200",
+                  "8": "123456789",
+                  "13": "Wonderland"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The poolId field is missing",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "The pool could not be found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Specify"
+      }
+    },
+    "/contacts/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Get info on specific contact",
+        "description": "Returns the non-empty data-entries for a given contact id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Contact identifier",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "The non-empty data-entries for the specified contact as a key-value map",
+            "schema": {
+              "type": "object",
+              "example": {
+                "id": 321654,
+                "poolId": 2409,
+                "externalId": "92",
+                "data": {
+                  "1": "Alice",
+                  "8": "123456789",
+                  "13": "Wonderland"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The contact could not be found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Contactentry"
+      },
+      "patch": {
+        "security": [],
+        "summary": "Update the data for a given contact",
+        "description": "Patches the data-entries for a given contact, by specifying a key-value map with the fields that should be altered",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Contact identifier",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Key-value map containing the fields that should be added or updated",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "example": {
+                "data": {
+                  "13267": "88668866"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "The non-empty data-entries for the specified contact as a key-value map (after updating)",
+            "schema": {
+              "type": "object",
+              "example": {
+                "id": 321654,
+                "poolId": 2409,
+                "externalId": "98",
+                "data": {
+                  "1": "Alice",
+                  "5": "8200",
+                  "8": "123456789",
+                  "13": "Wonderland"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The contact could not be found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Update"
+      }
+    },
+    "/contacts-external/{externalId}": {
+      "patch": {
+        "security": [],
+        "summary": "Update the data for a given contact (identified by the external id)",
+        "description": "Patches the data-entries for a given contact, by specifying a key-value map with the fields that should be altered",
+        "parameters": [
+          {
+            "name": "externalId",
+            "in": "path",
+            "description": "Contact identifier",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Key-value map containing the fields that should be added or updated",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "example": {
+                "poolId": "2409",
+                "data": {
+                  "13267": "88668866"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "contacts"
+        ],
+        "responses": {
+          "200": {
+            "description": "The non-empty data-entries for the specified contact as a key-value map (after updating)",
+            "schema": {
+              "type": "object",
+              "example": {
+                "id": 321654,
+                "poolId": 2409,
+                "externalId": "98",
+                "data": {
+                  "1": "Alice",
+                  "5": "8200",
+                  "8": "123456789",
+                  "13": "Wonderland"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The contact could not be found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Patch"
+      }
+    },
+    "/leads": {
+      "get": {
+        "security": [],
+        "summary": "Lead list",
+        "description": "The lead endpoint returns information about the leads related to the authenticated user.\n",
+        "tags": [
+          "leads"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of leads",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/leads"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "CampaignID"
+      },
+      "post": {
+        "security": [],
+        "summary": "Create new lead",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Lead resource to be created",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lead"
+            }
+          }
+        ],
+        "description": "This endpoint creates a new lead.\n",
+        "tags": [
+          "leads"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns lead id",
+            "schema": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Resultdata"
+      }
+    },
+    "/leads/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific lead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for lead.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "description": "Returns information about a specific lead.\n",
+        "tags": [
+          "leads"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of leads",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/leads"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "ID"
+      },
+      "delete": {
+        "security": [],
+        "summary": "Deletes lead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for lead.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "description": "This endpoint deletes a single lead.\n",
+        "tags": [
+          "leads"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Deletes"
+      },
+      "put": {
+        "security": [],
+        "summary": "Updates a lead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for lead.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "data",
+            "in": "body",
+            "description": "Array with lead data",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lead"
+            }
+          }
+        ],
+        "description": "This endpoint updates a single lead.\n",
+        "tags": [
+          "leads"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Boolean"
+      }
+    },
+    "/sessions": {
+      "get": {
+        "security": [],
+        "summary": "Session list",
+        "description": "The lead endpoint returns information about the sessions related to the authenticated user.\n",
+        "tags": [
+          "sessions"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of sessions",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/sessions"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "SessionStatus"
+      }
+    },
+    "/sessions/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific session",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for session.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "description": "Returns information about a specific session.\n",
+        "tags": [
+          "sessions"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of sessions",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/sessions"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Cdr"
+      }
+    },
+    "/users": {
+      "get": {
+        "security": [],
+        "summary": "User list",
+        "description": "The user endpoint returns information about all the users related to the authenticated user. The response includes the display name\nand other details about each user.\n",
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of users",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/users"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "UserID"
+      },
+      "post": {
+        "security": [],
+        "summary": "Create a user belonging to the authenticated client",
+        "description": "Create a regular (aka. internal) user belonging to the authenticated client.",
+        "tags": [
+          "users"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "User resource to be created",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/create-user"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The user was succesfully created and the created resource is returned along with the unique identifier created for the user",
+            "schema": {
+              "$ref": "#/definitions/users"
+            }
+          },
+          "400": {
+            "description": "Bad request. In particular this will occur if the username already exists or if either the username, phone or locale is not correctly formatted",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Da_DK"
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific user",
+        "description": "The user endpoint returns information about a particular user. The response includes the display name\nand other details about each user.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for user.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of users",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/users"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "UniqueIdentifier"
+      },
+      "delete": {
+        "security": [],
+        "summary": "Specific user",
+        "description": "Deactivates the user with the specified id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for user.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "The user was successfully deleted"
+          },
+          "404": {
+            "description": "The user could not be found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "Deactivates"
+      },
+      "patch": {
+        "security": [],
+        "summary": "Update a user belonging to the authenticated client",
+        "description": "Updates a regular (aka. internal) user belonging to the authenticated client.",
+        "tags": [
+          "users"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "A partial user resource containing any properties that should be updated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user-partial"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for user resource to be updated",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user was succesfully patched and the updated resource is returned along with the unique identifier created for the user",
+            "schema": {
+              "$ref": "#/definitions/users"
+            }
+          },
+          "400": {
+            "description": "Bad request. In particular this will occur if a new username is requested and that username already exists or if either the username, phone or locale is not correctly formatted",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "PatchID"
+      }
+    },
+    "/pools": {
+      "get": {
+        "security": [],
+        "summary": "Pool list",
+        "description": "The pools endpoint returns information about all the lead pools related to the authenticated user. \n",
+        "tags": [
+          "pools"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of pools",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/pools"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "LeadPool"
+      },
+      "post": {
+        "security": [],
+        "summary": "Add a pool",
+        "description": "Create a new lead pool belonging to the authenticated user. \n",
+        "tags": [
+          "pools"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "An object containing a \"name\" key",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "example": {
+                "name": "Wonderland"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pool was successfully added and the inserted resource is returned.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "created": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. This error will occur if the name is not specified in the request body.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "AddLeadPool"
+      }
+    },
+    "/pools/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Get a specific pool",
+        "description": "Returns information about a pool. \n",
+        "tags": [
+          "pools"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The pool ID",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of pools",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/pools"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "PoolID"
+      }
+    },
+    "/appointments": {
+      "get": {
+        "security": [],
+        "summary": "Appointment list",
+        "description": "The appointments endpoint returns information about all the appointments (bookings) related to the authenticated user. \n",
+        "tags": [
+          "appointments"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of appointments",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/appointments"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "BookingID"
+      }
+    },
+    "/fields": {
+      "get": {
+        "security": [],
+        "summary": "Fields list",
+        "description": "The fields endpoint returns information about all the data fields related to the authenticated user. \n",
+        "tags": [
+          "fields"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of fields",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "FieldInfo"
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "security": [],
+        "summary": "Webhook list",
+        "description": "The webhooks endpoint returns information about all the webhooks related to the authenticated user. \n",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of webhooks",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/webhooks"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "WebhookID"
+      },
+      "post": {
+        "security": [],
+        "summary": "Create new webhook",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Webhook specification, including event and url.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/webhook"
+            }
+          }
+        ],
+        "description": "This endpoint creates a new webhook.\n\nFor certain events it is possible to extend the emitted webhook post body. This is done by specifying the **template** property on create with a json object containing the output data using merge-tags. The template will be merged with the lead-data when the webhook is emitted and the result will be contained within the output as the property **data**.\n\nMerge-tags are specified inside the json-template as substrings having the form **[fieldId]**. These will be substituted by the corresponding lead-data identified by the *fieldId*.\nCurrently only the webhook event **lead_saved** support the templating system.",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns webhook id",
+            "schema": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "NewWebhook"
+      }
+    },
+    "/webhooks/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific webhook",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for webhook.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "description": "Returns information about a specific webhook.\n",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of webhooks",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/webhooks"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "WebhookResult"
+      },
+      "delete": {
+        "security": [],
+        "summary": "Deletes a webhook",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for webhook.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "description": "This endpoint deletes a single webhook.\n",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of webhooks",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/webhooks"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "DeleteWebhook1"
+      },
+      "put": {
+        "security": [],
+        "summary": "Updates a webhook",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for webhook.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "data",
+            "in": "body",
+            "description": "Array with webhook data",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/webhook"
+            }
+          }
+        ],
+        "description": "This endpoint updates a single webhook.\n",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns webhook id",
+            "schema": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "UpdateWebhook1"
+      }
+    },
+    "/efficiency/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Get user efficiency for the current date",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique id for user",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "description": "This endpoint is used for retrieving details on user efficiency, e.g. time spend waiting for calls vs time spent in calls vs time spenting processing calls",
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns user efficiency for selected user",
+            "schema": {
+              "$ref": "#/definitions/efficiency"
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "EfficiencyID"
+      }
+    },
+    "/users/{id}/loginTime": {
+      "get": {
+        "security": [],
+        "summary": "Get login time for a specific user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique id for user",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "description": "This endpoint is used for retrieving details on user efficiency, e.g. time spend waiting for calls vs time spent in calls vs time spenting processing calls",
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns user efficiency for selected user",
+            "schema": {
+              "$ref": "#/definitions/logintime"
+            }
+          },
+          "403": {
+            "description": "API user doesn't have permission to acces the user object",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "UserLoginDetails"
+      }
+    },
+    "/cdr": {
+      "get": {
+        "security": [],
+        "summary": "List call detail records",
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Json encoded parameters for filtering records. Valid filter properties include id', 'destination','startTime','answerTime','endTime','durationSeconds','conversationSeconds','disposition','userId','leadId' and 'campaignId' ",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Pagination page index",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Pagination page size",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "includeMeta",
+            "in": "query",
+            "description": "Include pagination information in the generated response",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "sortProperty",
+            "in": "query",
+            "description": "Property used for ordering records",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "id",
+              "disposition",
+              "userId",
+              "leadId",
+              "campaignId",
+              "destination",
+              "durationSeconds",
+              "conversationSeconds",
+              "startTime",
+              "answerTime",
+              "endTime"
+            ]
+          }
+        ],
+        "description": "This endpoint is used for retrieving billing information about phone calls",
+        "tags": [
+          "cdr"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns paginated response",
+            "schema": {
+              "$ref": "#/definitions/cdr"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "BillingID"
+      }
+    },
+    "/cdr/{id}/recording": {
+      "get": {
+        "security": [],
+        "summary": "Get download link for recorded audio",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for call detail record.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "cdr"
+        ],
+        "description": "Endpoint for getting the recorded audio for a call",
+        "responses": {
+          "307": {
+            "description": "Http redirect for downloading the requested resource. The returned location is valid for no longer than 2 hours."
+          },
+          "404": {
+            "description": "Call not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "AudioID"
+      }
+    },
+    "/projects": {
+      "get": {
+        "security": [],
+        "summary": "List projects",
+        "description": "Endpoint for getting all projects for the authenticated client",
+        "tags": [
+          "campaigns"
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of project records",
+            "schema": {
+              "$ref": "#/definitions/project-list"
+            }
+          }
+        },
+        "operationId": "ProjectDetails"
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for the project.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "campaigns"
+        ],
+        "summary": "List projects",
+        "description": "Endpoint for details about a particular project along with the associated campaigns",
+        "responses": {
+          "200": {
+            "description": "Project details record",
+            "schema": {
+              "$ref": "#/definitions/project-details"
+            }
+          }
+        },
+        "operationId": "ProjectType"
+      }
+    },
+    "/sales": {
+      "get": {
+        "security": [],
+        "summary": "Sales list.",
+        "description": "Returns the list of sales",
+        "tags": [
+          "sales"
+        ],
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Json encoded filter description. Valid filters include: 'id', 'state', 'created', 'lastModfiedTime', 'userId', 'campaign'.",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of sales.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/sales"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "SalesID"
+      }
+    },
+    "/sales/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific sale",
+        "description": "Returns information about a specific sale.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for a sale.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "sales"
+        ],
+        "responses": {
+          "200": {
+            "description": "Sales object.",
+            "schema": {
+              "$ref": "#/definitions/sales"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "SalesStatus"
+      }
+    },
+    "/products": {
+      "get": {
+        "security": [],
+        "summary": "Products list.",
+        "description": "Returns a list of products for an authenticated client.",
+        "tags": [
+          "products"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of products.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/products"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "ProductInfo"
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific product.",
+        "description": "Returns information about a specific product.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for a product.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "products"
+        ],
+        "responses": {
+          "200": {
+            "description": "Product object.",
+            "schema": {
+              "$ref": "#/definitions/products"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "ProductID"
+      }
+    },
+    "/sms": {
+      "get": {
+        "security": [],
+        "summary": "List of SMS",
+        "description": "Returns information of registered in- and outbound text messages, optionally filtered by a query parameter",
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "JSON encoded parameters for filtering records. Valid filter properties include 'type', 'timestamp', 'sender', 'receiver', 'userId', 'leadId' and 'campaignId'",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Pagination page index",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Pagination page size",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "includeMeta",
+            "in": "query",
+            "description": "Include pagination information in the generated response",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "sortProperty",
+            "in": "query",
+            "description": "Property used for ordering records",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "id",
+              "type",
+              "timestamp",
+              "sender",
+              "receiver",
+              "content",
+              "units",
+              "userId",
+              "leadId",
+              "campaignId",
+              "status"
+            ]
+          }
+        ],
+        "tags": [
+          "sms"
+        ],
+        "responses": {
+          "200": {
+            "description": "SMS object",
+            "schema": {
+              "$ref": "#/definitions/sms"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "SMSdetails"
+      }
+    },
+    "/sms/{id}": {
+      "get": {
+        "security": [],
+        "summary": "Specific SMS",
+        "description": "Returns information of a specific text message",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier for an SMS.",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "tags": [
+          "sms"
+        ],
+        "responses": {
+          "200": {
+            "description": "SMS object",
+            "schema": {
+              "$ref": "#/definitions/sms"
+            }
+          },
+          "400": {
+            "description": "Bad input",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        },
+        "operationId": "SMSID"
+      }
+    }
+  },
+  "definitions": {
+    "get": {
+      "type": "object",
+      "properties": {
+        "poolId": {
+          "type": "integer",
+          "example": 3,
+          "description": "Unique identifier representing a specific campaign"
+        },
+        "match": {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "type": "array",
+              "description": "Array of headerIds",
+              "items": {
+                "type": "integer",
+                "example": "3, 5, 123"
+              }
+            },
+            "blacklist": {
+              "type": "array",
+              "description": "Array of poolIds",
+              "items": {
+                "type": "integer",
+                "example": "42, 42"
+              }
+            }
+          }
+        },
+        "callbackUrl": {
+          "type": "string",
+          "description": "Redirect to this URL when imports finish || notify when finished",
+          "example": "/bank-leads"
+        },
+        "updatefields": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "description": "Merge data from these fields",
+            "example": [
+              5,
+              4
+            ]
+          }
+        },
+        "insert_key_value": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "integer",
+                "example": 1432,
+                "description": "Key for headingId"
+              },
+              "value": {
+                "type": "string",
+                "example": "John",
+                "description": "Value matching the key"
+              }
+            }
+          }
+        },
+        "resultFields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1,
+                "description": "id for created import request"
+              },
+              "state": {
+                "type": "string",
+                "example": "init || running || done",
+                "description": "state of the import request"
+              },
+              "contacts": {
+                "type": "integer",
+                "example": 2,
+                "description": "amount of contacts waiting for request to be executed"
+              },
+              "inserted": {
+                "type": "integer",
+                "example": 2,
+                "description": "amount of contacts added to the import request"
+              },
+              "total": {
+                "type": "integer",
+                "example": 4,
+                "description": "total amount of contacts in the import request"
+              }
+            }
+          }
+        }
+      }
+    },
+    "campaigns": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 123,
+          "description": "Unique identifier representing a bankgroup id"
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "example": "Campaign name",
+              "description": "Campaign name"
+            },
+            "visible": {
+              "example": true,
+              "type": "boolean",
+              "description": "Campaign visible in agents overview"
+            },
+            "record": {
+              "example": false,
+              "type": "boolean",
+              "description": "Calls are recorded"
+            },
+            "active": {
+              "example": true,
+              "type": "boolean",
+              "description": "Campaign is active"
+            },
+            "projectId": {
+              "example": true,
+              "type": "integer",
+              "description": "Unique identifier for the project the campaign belongs to or null if the campaign is not associated with a project"
+            }
+          }
+        },
+        "masterFields": {
+          "type": "array",
+          "description": "masterData are releated to a specific data field",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1,
+                "description": "id for related data field"
+              },
+              "type": {
+                "type": "string",
+                "example": "text",
+                "description": "Possible values; text, textarea"
+              },
+              "editable": {
+                "type": "boolean",
+                "example": true
+              },
+              "active": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        },
+        "resultFields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1,
+                "description": "id for related data field"
+              },
+              "type": {
+                "type": "string",
+                "example": "select",
+                "description": "text, textarea or select"
+              },
+              "active": {
+                "type": "boolean",
+                "example": true
+              },
+              "options": {
+                "type": "array",
+                "description": "If type is select",
+                "items": {
+                  "type": "string",
+                  "example": "Option 1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "leads": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 123,
+          "description": "Unique identifier for lead"
+        },
+        "campaignId": {
+          "type": "integer",
+          "example": 456,
+          "description": "Unique identifier for parent campaign"
+        },
+        "contactAttempts": {
+          "type": "integer",
+          "example": 2,
+          "description": "Number of attempts to contact lead"
+        },
+        "lastModifiedTime": {
+          "type": "string",
+          "example": "2016-06-22T09:34:49Z",
+          "description": "DateTime of last contact"
+        },
+        "nextContactTime": {
+          "type": "string",
+          "example": "2016-06-27T11:17:32Z",
+          "description": "DateTime of next planned contact"
+        },
+        "lastContactedBy": {
+          "type": "integer",
+          "example": 1823,
+          "description": "User id of the agent who last contacted lead"
+        },
+        "status": {
+          "type": "string",
+          "example": "success",
+          "description": "Lead closure status. Possible values are; new, success, notInterested, unqualified, invalid, automaticRedial, privateRedial, unknown"
+        },
+        "active": {
+          "type": "boolean",
+          "example": true,
+          "description": "Lead is active"
+        },
+        "externalId": {
+          "type": "integer",
+          "example": "1",
+          "description": "Id from another application"
+        },
+        "masterData": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1
+              },
+              "value": {
+                "type": "string",
+                "example": "+45 86 3000 86"
+              }
+            }
+          }
+        },
+        "resultData": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1
+              },
+              "value": {
+                "type": "string",
+                "example": "Option 2"
+              }
+            }
+          }
+        }
+      }
+    },
+    "lead": {
+      "type": "object",
+      "properties": {
+        "campaignId": {
+          "type": "integer",
+          "example": 456,
+          "description": "Unique identifier for parent campaign"
+        },
+        "contactAttempts": {
+          "type": "integer",
+          "example": 1,
+          "description": "Number of attempts to contact lead"
+        },
+        "lastModifiedTime": {
+          "type": "string",
+          "example": "2016-06-22T09:34:49Z",
+          "description": "DateTime of last contact"
+        },
+        "nextContactTime": {
+          "type": "string",
+          "example": "2016-06-27T11:17:32Z",
+          "description": "DateTime of next planned contact"
+        },
+        "lastContactedBy": {
+          "type": "integer",
+          "example": 1823,
+          "description": "User id of the agent who last contacted lead"
+        },
+        "pool": {
+          "type": "integer",
+          "example": 123,
+          "description": "Lead pool"
+        },
+        "status": {
+          "type": "string",
+          "example": "success",
+          "description": "Lead closure status. Possible values are; new, success, notInterested, unqualified, invalid, automaticRedial, privateRedial, unknown"
+        },
+        "active": {
+          "type": "boolean",
+          "example": true,
+          "description": "Lead is active"
+        },
+        "externalId": {
+          "type": "integer",
+          "example": "1",
+          "description": "Id from another application"
+        },
+        "masterData": {
+          "type": "array",
+          "description": "masterData are releated to a specific data field",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "Related field id",
+                "type": "integer",
+                "example": 1
+              },
+              "value": {
+                "type": "string",
+                "example": "+45 86 3000 86"
+              }
+            }
+          }
+        },
+        "resultData": {
+          "type": "array",
+          "description": "resultData are releated to a specific data field",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "Related field id",
+                "type": "integer",
+                "example": 1
+              },
+              "value": {
+                "type": "string",
+                "example": "Option 2"
+              }
+            }
+          }
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Unique identifier representing a specific sessions",
+          "example": 129389
+        },
+        "leadId": {
+          "type": "integer",
+          "description": "Id of related lead",
+          "example": 204179331
+        },
+        "userId": {
+          "type": "integer",
+          "description": "Id of related user",
+          "example": 1923
+        },
+        "campaignId": {
+          "type": "integer",
+          "description": "Id of related campaign",
+          "example": 6564
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Start time of session",
+          "example": "2016-08-08T07:33:02Z"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "End time of session",
+          "example": "2016-08-08T07:38:43Z"
+        },
+        "status": {
+          "type": "string",
+          "description": "Session status. Possible values are; new, automaticRedial, privateRedial, notInterested, success, invalid, unqualified and unknown",
+          "example": "automaticRedial"
+        },
+        "sessionSeconds": {
+          "type": "integer",
+          "description": "The duration of the session",
+          "example": 42
+        },
+        "cdr": {
+          "type": "object",
+          "properties": {
+            "destination": {
+              "type": "integer",
+              "example": "004586300086"
+            },
+            "startTime": {
+              "type": "string",
+              "example": "2016-08-08T07:38:43Z"
+            },
+            "answerTime": {
+              "type": "string",
+              "example": "2016-08-08T07:38:58Z"
+            },
+            "endTime": {
+              "type": "string",
+              "example": "2016-08-08T07:40:58Z"
+            },
+            "durationSeconds": {
+              "type": "integer",
+              "example": 120
+            },
+            "disposition": {
+              "type": "string",
+              "example": "answered",
+              "description": "Possible values are; answered, noAnswer, busy, fail"
+            }
+          }
+        }
+      }
+    },
+    "create-user": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Peter Petersen"
+        },
+        "email": {
+          "type": "string",
+          "example": "support@adversus.dk"
+        },
+        "password": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string",
+          "example": 4586300086
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "da_DK",
+            "sv_SE"
+          ]
+        }
+      }
+    },
+    "user-partial": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Peter Petersen"
+        },
+        "email": {
+          "type": "string",
+          "example": "support@adversus.dk"
+        },
+        "phone": {
+          "type": "string",
+          "example": 4586300086
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "da_DK",
+            "sv_SE"
+          ]
+        }
+      }
+    },
+    "users": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 123
+        },
+        "name": {
+          "type": "string",
+          "example": "Peter Petersen"
+        },
+        "active": {
+          "type": "boolean",
+          "example": true
+        },
+        "admin": {
+          "type": "boolean",
+          "example": false
+        },
+        "phone": {
+          "type": "string",
+          "example": 4586300086
+        },
+        "email": {
+          "type": "string",
+          "example": "support@adversus.dk"
+        },
+        "locale": {
+          "type": "string",
+          "example": "da_DK"
+        }
+      }
+    },
+    "pools": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        }
+      }
+    },
+    "appointments": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 1
+        },
+        "leadId": {
+          "type": "integer",
+          "example": 203332081
+        },
+        "userId": {
+          "type": "integer",
+          "example": 3213
+        },
+        "consultantId": {
+          "type": "integer",
+          "example": 2323
+        },
+        "start": {
+          "type": "string",
+          "description": "Appointment start time",
+          "example": "2016-08-08T07:00:00Z"
+        },
+        "end": {
+          "type": "string",
+          "description": "Appointment end time",
+          "example": "2016-08-08T09:00:00Z"
+        },
+        "status": {
+          "type": "string",
+          "description": "Possible values are: 'none', 'held', 'postponed', 'cancelled'",
+          "example": "held"
+        }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "description": "Possible values are: 'text', 'float'"
+        }
+      }
+    },
+    "webhooks": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "event": {
+          "type": "string"
+        },
+        "template": {
+          "type": "object"
+        },
+        "url": {
+          "type": "string"
+        },
+        "authKey": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string"
+        }
+      }
+    },
+    "webhook": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "Event type which the webhook is registered for.",
+          "enum": [
+            "lead_saved",
+            "call_ended",
+            "callAnswered",
+            "leadClosedSuccess",
+            "leadClosedAutomaticRedial",
+            "leadClosedPrivateRedial",
+            "leadClosedNotInterested",
+            "leadClosedInvalid",
+            "leadClosedUnqualified",
+            "leadClosedSystem",
+            "leads_deactivated",
+            "leads_inserted",
+            "mail_activity",
+            "sms_sent",
+            "sms_received",
+            "appointment_added",
+            "appointment_updated"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of webhook 'endpoint'"
+        },
+        "authKey": {
+          "type": "string",
+          "description": "AuthKey set as GET parameter in request"
+        },
+        "template": {
+          "type": "object",
+          "description": "Template definition for webhooks that are extendable\n\nTemplates are specified as json objects containing merge-tags. The template will be merged with the lead-data when the webhook is emitted and the result will be contained within the output as the property data.\n\nMerge-tags are specified inside the json-template as substrings having the form [fieldId]. These will be substituted by the corresponding lead-data identified by the fieldId.\nCurrently only the webhook event lead_saved support the templating system.",
+          "example": {
+            "event": "adversus-saved-lead",
+            "integrationId": "[1337]"
+          }
+        }
+      }
+    },
+    "cdr": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Unique identifier for the call detail record"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Id for the session which the call belongs to"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Id for the user who initiated or responded to the call"
+        },
+        "campaignId": {
+          "type": "string",
+          "description": "Id for the campaign which the call is associated with"
+        },
+        "leadId": {
+          "type": "string",
+          "description": "Id for the lead which the call is associated with"
+        },
+        "durationSeconds": {
+          "type": "string",
+          "description": "Total duration for the call including the time required to setup and dial"
+        },
+        "conversationSeconds": {
+          "type": "string",
+          "description": "Duration of the call from the time it was answered till the call ended"
+        },
+        "destination": {
+          "type": "string",
+          "description": "The number associated with the called party"
+        },
+        "disposition": {
+          "type": "string",
+          "description": "Call disposition can be used to distinguish whether the call answered connected or why it could not be answered or failed to connect",
+          "enum": [
+            "answered",
+            "busy",
+            "noAnswer",
+            "failed",
+            "congestion"
+          ]
+        },
+        "startTime": {
+          "type": "string",
+          "example": "2016-08-08T09:00:00Z",
+          "description": "The time at which the call was started"
+        },
+        "answerTime": {
+          "type": "string",
+          "example": "2016-08-08T09:00:10Z",
+          "description": "The time at which the call was answered"
+        },
+        "endTime": {
+          "type": "string",
+          "example": "2016-08-08T09:10:00Z",
+          "description": "The time at which the call was ended"
+        },
+        "links": {
+          "type": "object",
+          "properties": {
+            "recording": {
+              "type": "string",
+              "description": "Endpoint for retrieving a recording of the call if one such is available"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "id": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 206587501,
+          "format": "int32"
+        }
+      }
+    },
+    "project-list": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/project"
+      }
+    },
+    "project": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique identifier for the project.",
+          "type": "integer"
+        },
+        "name": {
+          "description": "The name given to the project.",
+          "type": "string"
+        }
+      }
+    },
+    "project-details": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique identifier for the project.",
+          "type": "integer"
+        },
+        "name": {
+          "description": "The name given to the project.",
+          "type": "string"
+        },
+        "campaigns": {
+          "description": "Array of campaign identifiers",
+          "type": "array",
+          "items": {
+            "description": "Unique identifier for campaign",
+            "type": "number"
+          }
+        }
+      }
+    },
+    "campaign-add-contact": {
+      "type": "object",
+      "properties": {
+        "contactId": {
+          "description": "Unique identifier for the contact.",
+          "type": "integer"
+        },
+        "status": {
+          "description": "Campaign status.",
+          "type": "string",
+          "enum": [
+            "new",
+            "automaticRedial",
+            "privateRedial",
+            "notInterested",
+            "success",
+            "invalid",
+            "unqualified"
+          ]
+        },
+        "nextContactTime": {
+          "description": "Specifies a datetime for when the next redial should occur. Only used for when status is automaticRedial, privateRedial or new",
+          "type": "string"
+        }
+      }
+    },
+    "efficiency": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "description": "User id",
+          "type": "integer"
+        },
+        "totalConversationSeconds": {
+          "description": "Total time spent in conversation.",
+          "type": "integer"
+        },
+        "totalWaitingSeconds": {
+          "description": "Total time spent waiting for a call to connect",
+          "type": "integer"
+        },
+        "totalPauseSeconds": {
+          "description": "Total time spent processing leads between dials",
+          "type": "integer"
+        }
+      }
+    },
+    "logintime": {
+      "type": "object",
+      "properties": {
+        "loginSeconds": {
+          "description": "Amount of seconds that the user has been logged in",
+          "type": "integer"
+        },
+        "userId": {
+          "description": "The users unique ID",
+          "type": "integer"
+        },
+        "fromDate": {
+          "description": "The date where the calculations starts",
+          "type": "integer"
+        },
+        "toDate": {
+          "description": "The date where til the calculations runs",
+          "type": "integer"
+        }
+      }
+    },
+    "organization": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The organization unique id",
+          "type": "integer"
+        },
+        "name": {
+          "description": "The organization name.",
+          "type": "string"
+        }
+      },
+      "example": {
+        "id": "1337",
+        "name": "Wonderland Inc."
+      }
+    },
+    "sales": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique id of the sale",
+          "type": "integer"
+        },
+        "campaignId": {
+          "description": "The unique id of the associated campaign of the sale.",
+          "type": "integer"
+        },
+        "leadId": {
+          "description": "The unique id of associated lead to the sale.",
+          "type": "integer"
+        },
+        "currency": {
+          "description": "The currency of the sale was made in.",
+          "type": "string"
+        },
+        "state": {
+          "description": "Name of the state the sale is in. This value is joined from the sales_status-table.",
+          "type": "string"
+        },
+        "lines": {
+          "description": "List of sales_products associated with the sale.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/sales_products"
+          }
+        }
+      },
+      "example": {
+        "id": 1,
+        "campaignid": 1,
+        "leadid": 1,
+        "currency": "DKK",
+        "state": "created",
+        "lines": [
+          {
+            "productId": 1,
+            "unit": "kilograms",
+            "quantity": "1",
+            "unitPrice": 199
+          },
+          {
+            "productId": 2,
+            "unit": null,
+            "quantity": "1",
+            "unitPrice": 425
+          }
+        ]
+      }
+    },
+    "sales_products": {
+      "type": "object",
+      "properties": {
+        "productId": {
+          "description": "The unique product id.",
+          "type": "integer"
+        },
+        "title": {
+          "description": "Title of the product.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of the product.",
+          "type": "string"
+        },
+        "quantity": {
+          "description": "Number of times the product was sold in a sale.",
+          "type": "integer"
+        },
+        "unit": {
+          "description": "Type of unit the product is based in. E.g: months, litres, meters, feet",
+          "type": "string"
+        },
+        "unitPrice": {
+          "description": "Price for each product unit.",
+          "type": "number"
+        }
+      },
+      "example": {
+        "productId": 1,
+        "quantity": 1,
+        "unitPrice": 199
+      }
+    },
+    "products": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique id of the product.",
+          "type": "integer"
+        },
+        "title": {
+          "description": "Title of the product.",
+          "type": "string"
+        },
+        "description": {
+          "description": "A description of the product.",
+          "type": "string"
+        },
+        "unit": {
+          "description": "Type of unit the product is based in. E.g: months, litres, meters, feet",
+          "type": "string"
+        },
+        "unitPrice": {
+          "description": "The price for one unit of the product.",
+          "type": "number"
+        },
+        "min": {
+          "description": "The minimum quantity of the product",
+          "type": "number"
+        },
+        "max": {
+          "description": "The maximum quantity of the product",
+          "type": "string"
+        }
+      },
+      "example": {
+        "id": 1,
+        "title": "Subscription 1",
+        "description": "This is a description of my subscription",
+        "unit": "months",
+        "unitPrice": 500,
+        "min": 1,
+        "max": 12
+      }
+    },
+    "contactsResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique id of the contact.",
+          "type": "integer",
+          "example": 1337
+        },
+        "importId": {
+          "description": "Import ID for the contact - generated when it was uploaded and is the same on contacts from same upload.",
+          "type": "integer",
+          "example": 42
+        },
+        "poolId": {
+          "description": "The unique id of the contact lead-pool.",
+          "type": "integer",
+          "example": 1234
+        },
+        "externalId": {
+          "description": "The unique id of the lead from an other system",
+          "type": "integer",
+          "example": 4
+        },
+        "fields": {
+          "description": "Array of b_data, indexed by b_heading id.",
+          "$ref": "#/definitions/contactsResponseFields"
+        }
+      }
+    },
+    "contactsResponseFields": {
+      "type": "object",
+      "properties": {
+        "1": {
+          "type": "string",
+          "example": "Hello"
+        },
+        "2": {
+          "type": "string",
+          "example": "world"
+        },
+        "3": {
+          "type": "string",
+          "example": null
+        },
+        "4": {
+          "type": "string",
+          "example": null
+        }
+      }
+    },
+    "sms": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 1337,
+          "description": "Unique identifier representing a specific SMS"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "outbound",
+            "inbound"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2020-05-020T13:37:02Z",
+          "description": "Date time notation in UTC"
+        },
+        "sender": {
+          "type": "string",
+          "example": "+4586300086",
+          "description": "The phone number of the sending party"
+        },
+        "receiver": {
+          "type": "string",
+          "example": "+4586300086",
+          "description": "The phone number of the receiving party"
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the SMS"
+        },
+        "userId": {
+          "type": "integer",
+          "example": 16,
+          "description": "User ID"
+        },
+        "leadId": {
+          "type": "integer",
+          "example": 242,
+          "description": "Lead ID"
+        },
+        "campaignId": {
+          "type": "integer",
+          "example": 96,
+          "description": "Campaign ID"
+        },
+        "units": {
+          "type": "integer",
+          "example": 1,
+          "description": "Number of units the contents of an SMS amounts to"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "dispatched",
+            "queued",
+            "failed",
+            "delivered"
+          ],
+          "example": "delivered",
+          "description": "The current status of the SMS"
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "basic_auth": []
+    }
+  ]
+}
